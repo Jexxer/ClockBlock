@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -16,13 +18,27 @@ namespace ClockBlock.GUI.ViewModels
         private AppConfig _config = new();
         private bool _isSaving;
         private string _statusMessage = String.Empty;
+        private string _workingHoursStart;
+        private string _workingHoursEnd;
 
-        public AppConfig Config
+        public string WorkingHoursStart
         {
-            get => _config;
+            get => _workingHoursStart;
             set
             {
-                _config = value;
+                _workingHoursStart = value;
+                Config.WorkingHoursStart = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string WorkingHoursEnd
+        {
+            get => _workingHoursEnd;
+            set
+            {
+                _workingHoursEnd = value;
+                Config.WorkingHoursEnd = value;
                 OnPropertyChanged();
             }
         }
@@ -47,18 +63,41 @@ namespace ClockBlock.GUI.ViewModels
             }
         }
 
+        public AppConfig Config
+        {
+            get => _config;
+            set
+            {
+                _config = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool IsValidTimeFormat(string time)
+        {
+            return DateTime.TryParseExact(time, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+        }
+
         public RelayCommand SaveConfigCommand { get; }
 
         // Constructor
         public MainViewModel()
         {
-            // Load the config from the file or set default values
             Config = LoadConfig();
+            _workingHoursStart = Config.WorkingHoursStart;
+            _workingHoursEnd = Config.WorkingHoursEnd;
             SaveConfigCommand = new RelayCommand(async () => await SaveConfigAsync(), () => !IsSaving);
         }
 
-        private async Task SaveConfigAsync()
+        public async Task SaveConfigAsync()
         {
+            // Perform validation before saving
+            if (!IsValidTimeFormat(WorkingHoursStart) || !IsValidTimeFormat(WorkingHoursEnd))
+            {
+                StatusMessage = "Please correct the time format before saving.\nExample: 21:00";
+                return;
+            }
+
             IsSaving = true;
             StatusMessage = "Saving...";
 
@@ -77,13 +116,15 @@ namespace ClockBlock.GUI.ViewModels
         }
 
         // Load config from file
-        private static AppConfig LoadConfig()
+        private AppConfig LoadConfig()
         {
             if (File.Exists("config.json"))
             {
+                Debug.WriteLine("Loading config from file.");
                 var json = File.ReadAllText("config.json");
                 return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
             }
+            StatusMessage = "Configuration file not found. Using default values.";
             return new AppConfig();
         }
 
