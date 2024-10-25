@@ -13,6 +13,8 @@
 *.sln.docstates
 
 
-# Ignore build and debug artifacts
+# Ignore bin and obj folders for main and test projects
 src/gui-app/ClockBlock.GUI/bin/
 src/gui-app/ClockBlock.GUI/obj/
+src/gui-app/ClockBlock.Tests/bin/
+src/gui-app/ClockBlock.Tests/obj/
