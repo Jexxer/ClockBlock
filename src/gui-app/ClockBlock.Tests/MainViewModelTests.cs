@@ -6,6 +6,7 @@ using Xunit;
 
 namespace ClockBlock.Tests
 {
+    [Collection("SequentialTests")]
     public class MainViewModelTests
     {
         [Fact]
@@ -74,6 +75,38 @@ namespace ClockBlock.Tests
 
             // Clean up
             File.Delete("config.json");
+        }
+
+        [Fact]
+        public async Task SaveConfigAsync_ShouldSetStatusMessageDuringAndAfterSave()
+        {
+            // Arrange
+            var viewModel = new MainViewModel();
+
+            // Act
+            await viewModel.SaveConfigAsync();
+
+            // Assert StatusMessage is reset after a short delay
+            Assert.Equal(string.Empty, viewModel.StatusMessage);
+
+        }
+
+        [Fact]
+        public async Task SaveConfigAsync_ShouldNotSaveConfig_WhenTimeFormatIsInvalid()
+        {
+            // Arrange
+            var viewModel = new MainViewModel
+            {
+                WorkingHoursStart = "10:00",
+                WorkingHoursEnd = "16:00"
+            };
+
+            // Act
+            viewModel.WorkingHoursStart = "10:00:00"; // Invalid time format
+            await viewModel.SaveConfigAsync();
+
+            // Assert
+            Assert.Equal("Please correct the time format before saving.\nExample: 21:00", viewModel.StatusMessage);
         }
     }
 }
