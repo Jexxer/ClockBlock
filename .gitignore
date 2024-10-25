@@ -4,3 +4,10 @@
 *.db
 *.exe
 *.dll
+.vs/
+
+# ignore configuration files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
