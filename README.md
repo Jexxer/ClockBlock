@@ -17,7 +17,7 @@ ClockBlock is a productivity tool designed to help users stay focused by blockin
 - ✅ Initial project structure with MVVM in WPF
 - ✅ Configuration model and handling
 - ✅ Unit tests for `MainViewModel`
-- ⬜ Input validation for working hours
+- ✅ Input validation for working hours
 - ⬜ Integration with Rust background service
 - ⬜ Enhanced UI and notification system
 
