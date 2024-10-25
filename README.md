@@ -43,16 +43,7 @@ ClockBlock is a productivity tool designed to help users stay focused by blockin
      - ⬜ Seed initial data as needed for testing.
      - ⬜ Test database interactions for performance and accuracy.
 
-### 4. Writing Tests for GUI, Database, and EF Core
-   - **Goal**: Ensure application robustness through comprehensive unit and integration tests.
-   - **Steps**:
-     - ⬜ Write unit tests for `MainViewModel` (input validation, save/load configuration).
-     - ⬜ Write unit tests for database models and CRUD operations using EF Core.
-     - ⬜ Implement integration tests for WPF data binding and interaction flows.
-     - ⬜ Write tests for statistics tracking and data persistence.
-     - ⬜ Validate and debug with automated tests to ensure full feature coverage.
-
-### 5. Background Service (Rust)
+### 4. Background Service (Rust)
    - **Goal**: Create a Rust-based background service to block application usage outside defined working hours.
    - **Steps**:
      - ⬜ Set up the Rust project with a basic structure.
@@ -61,6 +52,15 @@ ClockBlock is a productivity tool designed to help users stay focused by blockin
      - ⬜ Implement blocking logic to terminate or prevent blocked applications.
      - ⬜ Add communication with the WPF application for real-time status updates.
      - ⬜ Test and optimize service reliability, performance, and error handling.
+
+### TESTS. Writing Tests for GUI, Database, EF Core, and Service
+   - **Goal**: Ensure application robustness through comprehensive unit and integration tests.
+   - **Steps**:
+     - ✅ Write unit tests for `MainViewModel` (input validation, save/load configuration).
+     - ⬜ Write unit tests for database models and CRUD operations using EF Core.
+     - ⬜ Implement integration tests for WPF data binding and interaction flows.
+     - ⬜ Write tests for statistics tracking and data persistence.
+     - ⬜ Validate and debug with automated tests to ensure full feature coverage.
 
 ## Installation
 1. Clone the repository:
