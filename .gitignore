@@ -11,3 +11,8 @@
 *.user
 *.userosscache
 *.sln.docstates
+
+
+# Ignore build and debug artifacts
+src/gui-app/ClockBlock.GUI/bin/
+src/gui-app/ClockBlock.GUI/obj/
