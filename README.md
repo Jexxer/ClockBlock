@@ -8,10 +8,12 @@ ClockBlock is a productivity tool designed to help users stay focused by blockin
 - **Unit Tests**: Basic tests for configuration loading and saving to ensure robust functionality.
 
 ## Project Structure
-- **Models**: Holds the application’s configuration model.
-- **ViewModels**: Handles data binding and logic between the UI and data models.
-- **Views**: Contains WPF XAML files for the GUI interface.
-- **Tests**: Unit tests for validating functionality.
+- **/gui-app**: Contains the WPF GUI application, including:
+  - **Models**: Application configuration model.
+  - **ViewModels**: Handles data binding and logic between the UI and data models.
+  - **Views**: WPF XAML files for the GUI interface.
+  - **Tests**: Unit tests for validating functionality.
+- **/service**: Will contain the Rust background service responsible for blocking applications outside working hours.
 
 ## Roadmap
 
