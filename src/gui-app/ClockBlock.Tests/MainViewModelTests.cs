@@ -1,24 +1,32 @@
-﻿using ClockBlock.GUI.Models;
+﻿using ClockBlock.GUI.Data;
+using ClockBlock.GUI.Models;
 using ClockBlock.GUI.ViewModels;
-using System.IO;
-using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace ClockBlock.Tests
 {
-    [Collection("SequentialTests")]
+    [Collection("NonParallelTests")]
     public class MainViewModelTests
     {
+        private ClockBlockContext CreateInMemoryContext(string databaseName)
+        {
+            var options = new DbContextOptionsBuilder<ClockBlockContext>()
+                .UseInMemoryDatabase(databaseName: databaseName)
+                .Options;
+
+            var context = new ClockBlockContext(options);
+            context.Database.EnsureCreated();
+            return context;
+        }
+
         [Fact]
-        public void LoadConfig_ShouldLoadDefaultConfig_WhenConfigFileDoesNotExist()
+        public void LoadConfig_ShouldLoadDefaultConfig_WhenDatabaseIsEmpty()
         {
             // Arrange
-            if (File.Exists("config.json"))
-            {
-                File.Delete("config.json"); // Ensure no config file exists
-            }
-
-            var viewModel = new MainViewModel();
+            var context = CreateInMemoryContext("TestDb_LoadConfig_Defaults");
+            var viewModel = new MainViewModel(context);
 
             // Act
             var config = viewModel.Config;
@@ -29,84 +37,88 @@ namespace ClockBlock.Tests
         }
 
         [Fact]
-        public void SaveConfig_ShouldCreateConfigFile_WithCorrectValues()
+        public async Task SaveConfig_ShouldSaveConfig_WithCorrectValues()
         {
             // Arrange
-            var viewModel = new MainViewModel
+            var context = CreateInMemoryContext("TestDb_SaveConfig_CorrectValues");
+            var viewModel = new MainViewModel(context)
             {
-                Config = new AppConfig
-                {
-                    WorkingHoursStart = "08:00",
-                    WorkingHoursEnd = "18:00"
-                }
+                WorkingHoursStart = "08:00",
+                WorkingHoursEnd = "18:00"
             };
 
             // Act
-            viewModel.SaveConfig();
+            await viewModel.SaveConfigAsync();
 
             // Assert
-            Assert.True(File.Exists("config.json"));
-
-            var savedConfig = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText("config.json"));
+            var savedConfig = await context.Configurations.FirstOrDefaultAsync();
+            Assert.NotNull(savedConfig);
             Assert.Equal("08:00", savedConfig?.WorkingHoursStart);
             Assert.Equal("18:00", savedConfig?.WorkingHoursEnd);
-
-            // Clean up
-            File.Delete("config.json");
         }
 
         [Fact]
-        public void SaveConfig_ShouldOverwriteExistingConfigFile()
+        public async Task SaveConfig_ShouldOverwriteExistingConfig()
         {
             // Arrange
-            var viewModel = new MainViewModel();
-            viewModel.Config = new AppConfig { WorkingHoursStart = "10:00", WorkingHoursEnd = "16:00" };
-            viewModel.SaveConfig();
+            var context = CreateInMemoryContext("TestDb_SaveConfig_Overwrite");
+            var viewModel = new MainViewModel(context)
+            {
+                WorkingHoursStart = "10:00",
+                WorkingHoursEnd = "16:00"
+            };
 
-            // Act
-            viewModel.Config.WorkingHoursStart = "07:00";
-            viewModel.Config.WorkingHoursEnd = "15:00";
-            viewModel.SaveConfig();
+            // Initial save
+            await viewModel.SaveConfigAsync();
+
+            // Act - Modify and save again
+            viewModel.WorkingHoursStart = "07:00";
+            viewModel.WorkingHoursEnd = "15:00";
+            await viewModel.SaveConfigAsync();
 
             // Assert
-            var savedConfig = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText("config.json"));
+            var savedConfig = await context.Configurations.FirstOrDefaultAsync();
+            Assert.NotNull(savedConfig);
             Assert.Equal("07:00", savedConfig?.WorkingHoursStart);
             Assert.Equal("15:00", savedConfig?.WorkingHoursEnd);
-
-            // Clean up
-            File.Delete("config.json");
         }
 
         [Fact]
         public async Task SaveConfigAsync_ShouldSetStatusMessageDuringAndAfterSave()
         {
             // Arrange
-            var viewModel = new MainViewModel();
+            var context = CreateInMemoryContext("TestDb_SaveConfig_StatusMessage");
+            var viewModel = new MainViewModel(context);
 
             // Act
             await viewModel.SaveConfigAsync();
 
-            // Assert StatusMessage is reset after a short delay
+            // Assert - StatusMessage should reset after delay
             Assert.Equal(string.Empty, viewModel.StatusMessage);
-
         }
 
         [Fact]
         public async Task SaveConfigAsync_ShouldNotSaveConfig_WhenTimeFormatIsInvalid()
         {
             // Arrange
-            var viewModel = new MainViewModel
+            var context = CreateInMemoryContext("TestDb_SaveConfig_InvalidFormat");
+            var viewModel = new MainViewModel(context)
             {
                 WorkingHoursStart = "10:00",
                 WorkingHoursEnd = "16:00"
             };
 
-            // Act
-            viewModel.WorkingHoursStart = "10:00:00"; // Invalid time format
+            // Act - Set invalid time format and attempt to save
+            viewModel.WorkingHoursStart = "10:00:00"; // Invalid format
             await viewModel.SaveConfigAsync();
 
-            // Assert
+            // Assert - Save should be blocked by validation
             Assert.Equal("Please correct the time format before saving.\nExample: 21:00", viewModel.StatusMessage);
+            Assert.Null(await context.Configurations.FirstOrDefaultAsync()); // No entry should be saved
         }
     }
+
+    [CollectionDefinition("NonParallelTests", DisableParallelization = true)]
+    public class NonParallelTestsCollection : ICollectionFixture<NonParallelTestsCollection> { }
+
 }
