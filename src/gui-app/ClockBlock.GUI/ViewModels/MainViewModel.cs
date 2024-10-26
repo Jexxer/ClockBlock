@@ -1,25 +1,23 @@
 ﻿using ClockBlock.GUI.Models;
+using ClockBlock.GUI.Models.DTOs;
+using ClockBlock.GUI.Data;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClockBlock.GUI.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged
     {
-        private AppConfig _config = new();
+        private readonly ClockBlockContext _context;
+        private ConfigurationDto _configDto = new ConfigurationDto { WorkingHoursStart = "09:00", WorkingHoursEnd = "17:00" };
+
+        private string _workingHoursStart = "09:00";
+        private string _workingHoursEnd = "17:00";
         private bool _isSaving;
-        private string _statusMessage = String.Empty;
-        private string _workingHoursStart;
-        private string _workingHoursEnd;
+        private string _statusMessage = string.Empty;
 
         public string WorkingHoursStart
         {
@@ -63,35 +61,37 @@ namespace ClockBlock.GUI.ViewModels
             }
         }
 
-        public AppConfig Config
-        {
-            get => _config;
-            set
-            {
-                _config = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private bool IsValidTimeFormat(string time)
-        {
-            return DateTime.TryParseExact(time, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
-        }
-
+        public AppConfig Config { get; set; } = new AppConfig();
         public RelayCommand SaveConfigCommand { get; }
 
-        // Constructor
-        public MainViewModel()
+        // Default constructor for production
+        public MainViewModel() : this(new ClockBlockContext()) { }
+
+        // Constructor for dependency injection/testing
+        public MainViewModel(ClockBlockContext context)
         {
-            Config = LoadConfig();
-            _workingHoursStart = Config.WorkingHoursStart;
-            _workingHoursEnd = Config.WorkingHoursEnd;
+            _context = context; // Use the provided context without reinitializing
+            _context.Database.EnsureCreated();
+            LoadConfiguration();
             SaveConfigCommand = new RelayCommand(async () => await SaveConfigAsync(), () => !IsSaving);
+        }
+
+        private void LoadConfiguration()
+        {
+            _configDto = _context.Configurations.FirstOrDefault() ?? new ConfigurationDto
+            {
+                WorkingHoursStart = "09:00",
+                WorkingHoursEnd = "17:00"
+            };
+
+            // Sync DTO with ViewModel properties
+            WorkingHoursStart = _configDto.WorkingHoursStart;
+            WorkingHoursEnd = _configDto.WorkingHoursEnd;
         }
 
         public async Task SaveConfigAsync()
         {
-            // Perform validation before saving
+            // Validate before saving
             if (!IsValidTimeFormat(WorkingHoursStart) || !IsValidTimeFormat(WorkingHoursEnd))
             {
                 StatusMessage = "Please correct the time format before saving.\nExample: 21:00";
@@ -101,11 +101,12 @@ namespace ClockBlock.GUI.ViewModels
             IsSaving = true;
             StatusMessage = "Saving...";
 
-            await Task.Run(() =>
-            {
-                var json = JsonSerializer.Serialize(Config);
-                File.WriteAllText("config.json", json);
-            });
+            // Update DTO and save to database
+            _configDto.WorkingHoursStart = WorkingHoursStart;
+            _configDto.WorkingHoursEnd = WorkingHoursEnd;
+
+            _context.Configurations.Update(_configDto);
+            await _context.SaveChangesAsync();
 
             StatusMessage = "Configuration saved successfully!";
             IsSaving = false;
@@ -115,29 +116,13 @@ namespace ClockBlock.GUI.ViewModels
             StatusMessage = string.Empty;
         }
 
-        // Load config from file
-        private AppConfig LoadConfig()
+        private bool IsValidTimeFormat(string time)
         {
-            if (File.Exists("config.json"))
-            {
-                Debug.WriteLine("Loading config from file.");
-                var json = File.ReadAllText("config.json");
-                return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
-            }
-            StatusMessage = "Configuration file not found. Using default values.";
-            return new AppConfig();
-        }
-
-        // Save config to file
-        public void SaveConfig()
-        {
-            var json = JsonSerializer.Serialize(Config);
-            File.WriteAllText("config.json", json);
+            return DateTime.TryParseExact(time, "HH:mm", null, System.Globalization.DateTimeStyles.None, out _);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        // Implement INotifyPropertyChanged for data binding
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
