@@ -1,4 +1,4 @@
-# ClockBlock
+# ClockBlock (WIP)
 
 ClockBlock is a productivity tool designed to help users stay focused by blocking access to specific applications during defined working hours. It consists of a Windows background service and a WPF-based GUI application for configuration and viewing usage statistics.
 
