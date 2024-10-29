@@ -1,9 +1,6 @@
 ﻿using ClockBlock.GUI.Data;
-using ClockBlock.GUI.Models;
 using ClockBlock.GUI.ViewModels;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace ClockBlock.Tests
 {
@@ -44,7 +41,7 @@ namespace ClockBlock.Tests
             var viewModel = new MainViewModel(context)
             {
                 WorkingHoursStart = "08:00",
-                WorkingHoursEnd = "18:00"
+                WorkingHoursEnd = "18:00",
             };
 
             // Act
@@ -65,7 +62,7 @@ namespace ClockBlock.Tests
             var viewModel = new MainViewModel(context)
             {
                 WorkingHoursStart = "10:00",
-                WorkingHoursEnd = "16:00"
+                WorkingHoursEnd = "16:00",
             };
 
             // Initial save
@@ -105,7 +102,7 @@ namespace ClockBlock.Tests
             var viewModel = new MainViewModel(context)
             {
                 WorkingHoursStart = "10:00",
-                WorkingHoursEnd = "16:00"
+                WorkingHoursEnd = "16:00",
             };
 
             // Act - Set invalid time format and attempt to save
@@ -113,12 +110,14 @@ namespace ClockBlock.Tests
             await viewModel.SaveConfigAsync();
 
             // Assert - Save should be blocked by validation
-            Assert.Equal("Please correct the time format before saving.\nExample: 21:00", viewModel.StatusMessage);
+            Assert.Equal(
+                "Please correct the time format before saving.\nExample: 21:00",
+                viewModel.StatusMessage
+            );
             Assert.Null(await context.Configurations.FirstOrDefaultAsync()); // No entry should be saved
         }
     }
 
     [CollectionDefinition("NonParallelTests", DisableParallelization = true)]
     public class NonParallelTestsCollection : ICollectionFixture<NonParallelTestsCollection> { }
-
 }
